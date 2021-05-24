@@ -8,7 +8,7 @@ namespace LibBili.Danmaku.Model
 {
     public class Packet
     {
-        private static readonly Packet _NoBodyHeartBeatPacket = new Packet()
+        private static readonly Packet _NoBodyHeartBeatPacket = new()
         {
             Header = new PacketHeader()
             {
@@ -19,24 +19,25 @@ namespace LibBili.Danmaku.Model
         }; 
 
         public PacketHeader Header { get; set; }
+        public int Length { get => Header.PacketLength; }
         public byte[] PacketBody { get; set; }
 
         public Packet() { }
 
-        public Packet(byte[] bytes)
+        public Packet(ref byte[] bytes)
         {
-            var headerBuffer = bytes.Take(16).ToArray();
+            var headerBuffer = bytes[0..PacketHeader.PACKET_HEADER_LENGTH];
             Header = new PacketHeader(headerBuffer);
-            PacketBody = bytes.Skip(16).ToArray();
+            PacketBody = bytes[Header.HeaderLength..Header.PacketLength];
         }
 
-        public Packet(Operation operation, byte[] body = null)
+        public Packet(Operation operation,byte[] body = null)
         {
             Header = new PacketHeader
             {
                 Operation = operation,
                 ProtocolVersion = ProtocolVersion.UnCompressed,
-                PacketLength = 16 + (body == null? 0: body.Length)
+                PacketLength = PacketHeader.PACKET_HEADER_LENGTH + (body == null? 0: body.Length)
             };
             PacketBody = body;
         }
@@ -94,9 +95,17 @@ namespace LibBili.Danmaku.Model
         /// <param name="token"></param>
         /// <param name="uid"></param>
         /// <returns></returns>
-        public static Packet Authority(long roomID, string token,int uid = 0)
+        public static Packet Authority(long roomID, string token,int uid = 0, ProtocolVersion protocolVersion = ProtocolVersion.Brotli)
         {
-            var obj = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(new { roomid = roomID, uid = uid, protover = 2, key = token, platform = "web", clientver="2.1.7", type = 2  }));
+            var obj = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
+                new { 
+                    roomid = roomID, 
+                    uid = uid, 
+                    protover = (int)protocolVersion, 
+                    key = token, 
+                    platform = "web", 
+                    clientver="2.1.7", 
+                    type = 2  }));
             return new Packet
             {
                 Header = new PacketHeader

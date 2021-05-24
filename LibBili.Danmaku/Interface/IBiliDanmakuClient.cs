@@ -3,6 +3,8 @@ using LibBili.Danmaku.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -17,7 +19,7 @@ namespace LibBili.Danmaku.Interface
     {
         public long? RoomID { get; }
         public long? RealRoomID { get; }
-        public bool Connected { get; }
+        public bool Connected { get; protected set; }
         protected Timer _timer = new Timer();
         protected string _token;
 
@@ -72,6 +74,10 @@ namespace LibBili.Danmaku.Interface
         /// </summary>
         //public event EventHandler UpdateGiftTop;
         /// <summary>
+        /// 欢迎
+        /// </summary>
+        public event EventHandler Welcome;
+        /// <summary>
         /// 欢迎老爷
         /// </summary>
         //public event EventHandler WelcomeVip;
@@ -113,15 +119,34 @@ namespace LibBili.Danmaku.Interface
 
         protected virtual void OnOpen() {
             SendAsync(Packet.Authority(RealRoomID.Value, _token));
+            Connected = true;
             _timer.Interval = 30 * 1000;
-            _timer.Elapsed += (sender, e) => SendAsync(Packet.HeartBeat());
+            _timer.Elapsed += (sender, e) => { if (Connected) SendAsync(Packet.HeartBeat()); };
             _timer.Start();
         }
 
-        protected async void ProcessPacketAync(byte[] bytes)
+        protected void ProcessPacket(byte[] bytes) =>
+            ProcessPacketAsync(new Packet(ref bytes));
+
+        protected async void ProcessPacketAsync(Packet packet)
         {
-            var packet = new Packet(bytes);
             var header = packet.Header;
+            switch (header.ProtocolVersion)
+            {
+                case ProtocolVersion.UnCompressed:
+                case ProtocolVersion.HeartBeat:
+                    break;
+                case ProtocolVersion.Zlib:
+                    await foreach (var packet1 in ZlibDeCompressAsync(packet.PacketBody))
+                        ProcessPacketAsync(packet1);
+                    return;
+                case ProtocolVersion.Brotli:
+                    await foreach (var packet1 in BrotliDecompressAsync(packet.PacketBody))
+                        ProcessPacketAsync(packet1);
+                    return;
+                default:
+                    throw new Exception();
+            }
             switch (header.Operation)
             {
                 case Operation.AuthorityResponse:
@@ -133,26 +158,17 @@ namespace LibBili.Danmaku.Interface
                     UpdatePopularity?.Invoke(this, popularity);
                     break;
                 case Operation.ServerNotify:
-                    string body = "";
-                    switch (header.ProtocolVersion)
-                    {
-                        case ProtocolVersion.UnCompressed:
-                            body = Encoding.UTF8.GetString(packet.PacketBody, 0, header.BodyLength);
-                            break;
-                        case ProtocolVersion.Compressed:
-                            body = Encoding.UTF8.GetString((await ZlibDeCompressAsync(packet.PacketBody)).PacketBody);
-                            break;
-                    }
-                    var json = JObject.Parse(body);
-                    ProcessNoticeAsync(body, json);
-                    //Console.WriteLine(body);
+                    ProcessNotice(Encoding.UTF8.GetString(packet.PacketBody));
                     break;
+
             }
         }
 
-        protected async void ProcessNoticeAsync(string rawMessage, JObject json)
+        protected void ProcessNotice(string rawMessage)
         {
+            var json = JObject.Parse(rawMessage);
             ReceiveNotice?.Invoke(this, new ReceiveNoticeEventArgs { RawMessage = rawMessage, JsonMessage = json });
+            //Debug.WriteLine(rawMessage);
             switch (json["cmd"].ToString())
             {
                 case "DANMU_MSG":
@@ -180,7 +196,9 @@ namespace LibBili.Danmaku.Interface
                     break;
                 case "ROOM_REAL_TIME_MESSAGE_UPDATE":
                     break;
-                case "WELCOME":
+                case "INTERACT_WORD":
+                    //Console.WriteLine(rawMessage);
+
                     break;
                 case "ONLINERANK":
                     break;
@@ -199,17 +217,39 @@ namespace LibBili.Danmaku.Interface
             }
         }
 
-        protected static async Task<Packet> ZlibDeCompressAsync(byte[] bytes)
+        protected static async IAsyncEnumerable<Packet> ZlibDeCompressAsync(byte[] bytes)
         {
             //Skip Zlib Header
             using var ms = new MemoryStream(bytes, 2, bytes.Length - 2);
             using var zs = new DeflateStream(ms, CompressionMode.Decompress);
-            var headerbuffer = new byte[16];
-            await zs.ReadAsync(headerbuffer, 0, 16);
-            var header = new PacketHeader(headerbuffer);
-            var buffer = new byte[header.BodyLength];
-            await zs.ReadAsync(buffer, 0, buffer.Length);
-            return new Packet { Header = header, PacketBody = buffer};
+            var len = 1;
+            while(len > 0)
+            {
+                var headerbuffer = new byte[PacketHeader.PACKET_HEADER_LENGTH];
+                len = await zs.ReadAsync(headerbuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
+                if (len == 0) break;
+                var header = new PacketHeader(headerbuffer);
+                var buffer = new byte[header.BodyLength];
+                len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
+                yield return new Packet { Header = header, PacketBody = buffer };
+            }
+        }
+
+        protected static async IAsyncEnumerable<Packet> BrotliDecompressAsync(byte[] bytes)
+        {
+            using var ms = new MemoryStream(bytes, 0, bytes.Length);
+            using var zs = new BrotliStream(ms, CompressionMode.Decompress);
+            var len = 1;
+            while (len > 0)
+            {
+                var headerbuffer = new byte[PacketHeader.PACKET_HEADER_LENGTH];
+                len = await zs.ReadAsync(headerbuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
+                if (len == 0) break;
+                var header = new PacketHeader(headerbuffer);
+                var buffer = new byte[header.BodyLength];
+                len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
+                yield return new Packet { Header = header, PacketBody = buffer };
+            }
         }
     }
 

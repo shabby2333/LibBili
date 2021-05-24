@@ -13,7 +13,5 @@ namespace LibBili.Danmaku.Util
         {
             return BitConverter.IsLittleEndian ? b.Reverse().ToArray() : b;
         }
-
-        
     }
 }

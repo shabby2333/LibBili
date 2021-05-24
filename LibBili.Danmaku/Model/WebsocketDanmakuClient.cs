@@ -18,9 +18,9 @@ namespace LibBili.Danmaku.Model
     public class WebsocketDanmakuClient : Interface.IBiliDanmakuClient
     {
         private WebSocket _ws;
-        private CookieContainer _cookies = new CookieContainer();
+        private CookieContainer _cookies = new();
         private HttpClient _http;
-        private string _url = "wss://tx-gz-live-comet-12.chat.bilibili.com/sub";
+        private string _url = "wss://hw-bj-live-comet-05.chat.bilibili.com/sub";
 
         public WebsocketDanmakuClient(long roomID) : base(roomID) { _http = new HttpClient(new HttpClientHandler { CookieContainer = _cookies }); }
         public WebsocketDanmakuClient(long roomID, long realRoomID) : base(roomID, realRoomID){ _http = new HttpClient(new HttpClientHandler { CookieContainer = _cookies }); }
@@ -37,10 +37,10 @@ namespace LibBili.Danmaku.Model
             //_ws.Proxy = new HttpConnectProxy(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8888));
 
             _ws.Opened += (sender, e) => OnOpen();
-            _ws.DataReceived += (sender, e) => ProcessPacketAync(e.Data);
-            _ws.Closed += (sender, e) => Console.WriteLine("WS CLOSED");
-            _ws.Error += (sender, e) => Console.WriteLine("WS err" + e.Exception.Message);
-            _ws.Open();
+            _ws.DataReceived += (sender, e) => ProcessPacket(e.Data);
+            _ws.Closed += (sender, e) => { Console.WriteLine("WS CLOSED"); Connected = false; };
+            _ws.Error += (sender, e) => {Console.WriteLine("WS err" + e.Exception.Message); Connected = false;};
+        _ws.Open();
         }
 
         public override void Disconnect()
@@ -51,7 +51,8 @@ namespace LibBili.Danmaku.Model
 
         public override void Dispose()
         {
-            throw new NotImplementedException();
+            GC.SuppressFinalize(this);
+            //throw new NotImplementedException();
         }
 
         public override void Send(byte[] packet) => _ws.Send(packet, 0, packet.Length);
