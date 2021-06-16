@@ -22,14 +22,16 @@ namespace LibBili.Danmaku.Model
         private HttpClient _http;
         private string _url = "wss://hw-bj-live-comet-05.chat.bilibili.com/sub";
 
-        public WebsocketDanmakuClient(long roomID) : base(roomID) { _http = new HttpClient(new HttpClientHandler { CookieContainer = _cookies }); }
+        public WebsocketDanmakuClient(long roomID) : this(roomID, roomID) { }
         public WebsocketDanmakuClient(long roomID, long realRoomID) : base(roomID, realRoomID){ _http = new HttpClient(new HttpClientHandler { CookieContainer = _cookies }); }
 
         public async override void Connect()
         {
+            //尝试释放已连接的ws
             _ws?.Close();
             _ws?.Dispose();
 
+            //根据房间号获取弹幕服务器地址信息及验证信息
             var info = await GetDanmakuLinkInfo(RealRoomID.Value);
             _url = $"wss://{info["host_list"][0]["host"]}:{info["host_list"][0]["wss_port"]}/sub";
             _token = info["token"].ToString();
@@ -38,6 +40,7 @@ namespace LibBili.Danmaku.Model
 
             _ws.Opened += (sender, e) => OnOpen();
             _ws.DataReceived += (sender, e) => ProcessPacket(e.Data);
+            //TODO: 关闭及异常事件处理
             _ws.Closed += (sender, e) => { Console.WriteLine("WS CLOSED"); Connected = false; };
             _ws.Error += (sender, e) => {Console.WriteLine("WS err" + e.Exception.Message); Connected = false;};
         _ws.Open();

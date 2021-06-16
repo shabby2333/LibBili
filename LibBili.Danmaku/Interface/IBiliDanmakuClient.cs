@@ -102,6 +102,7 @@ namespace LibBili.Danmaku.Interface
         public IBiliDanmakuClient(long roomID)
         {
             RoomID = roomID;
+            RealRoomID = RoomID;
         }
         public IBiliDanmakuClient(long roomID, long realRoomID)
         {
@@ -124,6 +125,8 @@ namespace LibBili.Danmaku.Interface
             _timer.Elapsed += (sender, e) => { if (Connected) SendAsync(Packet.HeartBeat()); };
             _timer.Start();
         }
+
+
 
         protected void ProcessPacket(byte[] bytes) =>
             ProcessPacketAsync(new Packet(ref bytes));
@@ -203,7 +206,7 @@ namespace LibBili.Danmaku.Interface
                 case "ONLINERANK":
                     break;
                 case "LIVE":
-                    LiveStart(this, null);
+                    LiveStart?.Invoke(this, null);
                     break;
                 case "PREPARING":
                     break;
