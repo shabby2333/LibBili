@@ -17,8 +17,8 @@ namespace LibBili.Danmaku.Interface
 {
     public abstract class IBiliDanmakuClient : IDisposable
     {
-        public long? RoomID { get; }
-        public long? RealRoomID { get; }
+        public long RoomID { get; }
+        public long? RealRoomID { get; protected set;}
         public bool Connected { get; protected set; }
         protected Timer _timer = new Timer();
         protected string _token;
@@ -102,9 +102,8 @@ namespace LibBili.Danmaku.Interface
         public IBiliDanmakuClient(long roomID)
         {
             RoomID = roomID;
-            RealRoomID = RoomID;
         }
-        public IBiliDanmakuClient(long roomID, long realRoomID)
+        public IBiliDanmakuClient(long roomID, long? realRoomID)
         {
             RealRoomID = realRoomID;
             RoomID = roomID;

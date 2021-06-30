@@ -18,7 +18,7 @@ namespace LibBili.Api.Util
 
         public static string ToCookieString(this CookieCollection cookies)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             foreach (Cookie cookie in cookies)
                 sb.Append($"{cookie.Name}={cookie.Value}; ");
             return sb.ToString();
