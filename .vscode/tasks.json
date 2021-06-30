@@ -25,7 +25,11 @@
                 "publish",
                 "${workspaceFolder}/LibBili.TestCore/LibBili.TestCore.csproj",
                 "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
+                "/consoleloggerparameters:NoSummary",
+                "--configuration",
+                "Release",
+                "--runtime",
+                "win-x64"
             ],
             "problemMatcher": "$msCompile"
         },
