@@ -22,7 +22,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Publish
-      run: dotnet publish --no-restore
+      run: dotnet publish --no-restore --configuration Release --runtime win-x64
     - name: Publish ubuntu20.04
-      run: dotnet publish --no-restore  --runtime ubuntu.20.04-x64
+      run: dotnet publish --no-restore --configuration Release --runtime ubuntu.20.04-x64
     
