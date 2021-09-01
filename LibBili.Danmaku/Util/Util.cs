@@ -9,9 +9,6 @@ namespace LibBili.Danmaku.Util
 {
     public static class Util
     {
-        public static byte[] ToBigEndian(this byte[] b)
-        {
-            return BitConverter.IsLittleEndian ? b.Reverse().ToArray() : b;
-        }
+        
     }
 }

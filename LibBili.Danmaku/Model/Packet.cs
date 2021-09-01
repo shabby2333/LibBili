@@ -6,23 +6,22 @@ using System.Text;
 
 namespace LibBili.Danmaku.Model
 {
-    public class Packet
+    public struct Packet
     {
         private static readonly Packet _NoBodyHeartBeatPacket = new()
         {
             Header = new PacketHeader()
             {
-                PacketLength = PacketHeader.PACKET_HEADER_LENGTH,
+                HeaderLength = PacketHeader.PACKET_HEADER_LENGTH,
+                SequenceId = 1,
                 ProtocolVersion = ProtocolVersion.HeartBeat,
                 Operation = Operation.HeartBeat
             }
-        }; 
+        };
 
-        public PacketHeader Header { get; set; }
+        public PacketHeader Header;
         public int Length { get => Header.PacketLength; }
-        public byte[] PacketBody { get; set; }
-
-        public Packet() { }
+        public byte[] PacketBody;
 
         public Packet(ref byte[] bytes)
         {
@@ -82,7 +81,9 @@ namespace LibBili.Danmaku.Model
                 {
                     PacketLength = PacketHeader.PACKET_HEADER_LENGTH + msg.Length,
                     ProtocolVersion = ProtocolVersion.HeartBeat,
-                    Operation = Operation.HeartBeat
+                    Operation = Operation.HeartBeat,
+                    SequenceId = 1,
+                    HeaderLength = PacketHeader.PACKET_HEADER_LENGTH
                 },
                 PacketBody = msg
             };
@@ -112,6 +113,8 @@ namespace LibBili.Danmaku.Model
                 {
                     Operation = Operation.Authority,
                     ProtocolVersion = ProtocolVersion.HeartBeat,
+                    SequenceId = 1,
+                    HeaderLength = PacketHeader.PACKET_HEADER_LENGTH,
                     PacketLength = PacketHeader.PACKET_HEADER_LENGTH + obj.Length
                 },
                 PacketBody = obj

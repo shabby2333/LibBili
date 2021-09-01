@@ -1,17 +1,12 @@
 ﻿using LibBili.Danmaku.Model;
-using LibBili.Danmaku.Util;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
 
 namespace LibBili.Danmaku.Interface
 {
@@ -20,7 +15,7 @@ namespace LibBili.Danmaku.Interface
         public long RoomID { get; }
         public long? RealRoomID { get; protected set;}
         public bool Connected { get; protected set; }
-        protected Timer _timer = new Timer();
+        protected Timer _timer = null;
         protected string _token;
 
         /// <summary>
@@ -120,9 +115,13 @@ namespace LibBili.Danmaku.Interface
         protected virtual void OnOpen() {
             SendAsync(Packet.Authority(RealRoomID.Value, _token));
             Connected = true;
-            _timer.Interval = 30 * 1000;
-            _timer.Elapsed += (sender, e) => { if (Connected) SendAsync(Packet.HeartBeat()); };
-            _timer.Start();
+
+            if(_timer != null)
+                _timer.Dispose();
+            _timer = new Timer((e) => (
+            (IBiliDanmakuClient)e)?.SendAsync(Packet.HeartBeat())
+            , this, 0, 30 * 1000);
+            
         }
 
 
@@ -156,7 +155,8 @@ namespace LibBili.Danmaku.Interface
                     //Console.WriteLine($"Authority Response:{Encoding.UTF8.GetString(bytes, 16, bytes.Length - 16) == "{\"code\":0}"}");
                     break;
                 case Operation.HeartBeatResponse:
-                    var popularity = BitConverter.ToInt32(packet.PacketBody.ToBigEndian(), 0);
+                    Array.Reverse(packet.PacketBody);
+                    var popularity = BitConverter.ToInt32(packet.PacketBody);
                     UpdatePopularity?.Invoke(this, popularity);
                     break;
                 case Operation.ServerNotify:

@@ -14,26 +14,16 @@ namespace LibBili.Danmaku.Model
     /// <summary>
     /// 弹幕数据包头部
     /// </summary>
-    public class PacketHeader : IEquatable<PacketHeader>
+    public struct PacketHeader : IEquatable<PacketHeader>
     {
         public const int PACKET_HEADER_LENGTH = 16;
-        public const int PACKET_LENGTH_OFFSET = 0;
-        public const int PACKET_LENGTH_LENGTH = 4;
-        public const int HEADER_LENFTH_OFFSET = 4;
-        public const int HEADER_LENGTH_LENGTH = 2;
-        public const int PROTOCOL_VERSION_OFFSET = 6;
-        public const int PROTOCOL_VERSION_LENGTH = 2;
-        public const int OPERATION_OFFSET = 8;
-        public const int OPERATION_LENGTH = 4;
-        public const int SEQUENCE_ID_OFFSET = 12;
-        public const int SEQUENCE_ID_LENGTH = 4;
 
 
         public int PacketLength;
-        public short HeaderLength = PACKET_HEADER_LENGTH;
+        public short HeaderLength;
         public ProtocolVersion ProtocolVersion;
         public Operation Operation;
-        public int SequenceId = 1;
+        public int SequenceId;
         public int BodyLength { get => PacketLength - HeaderLength; }
 
         /// <summary>
@@ -43,14 +33,20 @@ namespace LibBili.Danmaku.Model
         public PacketHeader(byte[] bytes)
         {
             if (bytes.Length < PACKET_HEADER_LENGTH) throw new ArgumentException("No Supported Protocol Header");
-            PacketLength = BitConverter.ToInt32(bytes[PACKET_LENGTH_OFFSET..(PACKET_LENGTH_OFFSET + PACKET_LENGTH_LENGTH)].ToBigEndian());
-            HeaderLength = BitConverter.ToInt16(bytes[4..6].ToBigEndian());
-            ProtocolVersion = (ProtocolVersion)BitConverter.ToInt16(bytes[6..8].ToBigEndian());
-            Operation = (Operation)BitConverter.ToInt32(bytes[8..12].ToBigEndian());
-            SequenceId = BitConverter.ToInt32(bytes[12..PACKET_HEADER_LENGTH].ToBigEndian());
+
+            Array.Reverse(bytes, 0, 4);
+            Array.Reverse(bytes, 4, 2);
+            Array.Reverse(bytes, 6, 2);
+            Array.Reverse(bytes, 8, 4);
+            Array.Reverse(bytes, 12, 4);
+            var b = bytes.AsSpan();
+            PacketLength = BitConverter.ToInt32(b[0..4]);
+            HeaderLength = BitConverter.ToInt16(b[4..6]);
+            ProtocolVersion = (ProtocolVersion)BitConverter.ToInt16(b[6..8]);
+            Operation = (Operation)BitConverter.ToInt32(b[8..12]);
+            SequenceId = BitConverter.ToInt32(b[12..16]);
         }
 
-        public PacketHeader() { }
 
         /// <summary>
         /// 生成弹幕协议的头部
@@ -95,11 +91,18 @@ namespace LibBili.Danmaku.Model
         public static byte[] GetBytes(int PacketLength, short HeaderLength, ProtocolVersion ProtocolVersion, Operation Operation, int SequenceId = 1)
         {
             var bytes = new byte[PACKET_HEADER_LENGTH];
-            Array.Copy(BitConverter.GetBytes(PacketLength).ToBigEndian(), 0, bytes, 0, 4);
-            Array.Copy(BitConverter.GetBytes(HeaderLength).ToBigEndian(), 0, bytes, 4, 2);
-            Array.Copy(BitConverter.GetBytes((short)ProtocolVersion).ToBigEndian(), 0, bytes, 6, 2);
-            Array.Copy(BitConverter.GetBytes((int)Operation).ToBigEndian(), 0, bytes, 8, 4);
-            Array.Copy(BitConverter.GetBytes(SequenceId).ToBigEndian(), 0, bytes, 12, 4);
+            Array.Copy(BitConverter.GetBytes(PacketLength), 0, bytes, 0, 4);
+            Array.Copy(BitConverter.GetBytes(HeaderLength), 0, bytes, 4, 2);
+            Array.Copy(BitConverter.GetBytes((short)ProtocolVersion), 0, bytes, 6, 2);
+            Array.Copy(BitConverter.GetBytes((int)Operation), 0, bytes, 8, 4);
+            Array.Copy(BitConverter.GetBytes(SequenceId), 0, bytes, 12, 4);
+
+            Array.Reverse(bytes, 0, 4);
+            Array.Reverse(bytes, 4, 2);
+            Array.Reverse(bytes, 6, 2);
+            Array.Reverse(bytes, 8, 4);
+            Array.Reverse(bytes, 12, 4);
+            
             return bytes;
         }
     }
@@ -148,6 +151,9 @@ namespace LibBili.Danmaku.Model
         /// zlib数据
         /// </summary>
         Zlib = 2,
+        /// <summary>
+        /// Br数据
+        /// </summary>
         Brotli = 3
     }
 }

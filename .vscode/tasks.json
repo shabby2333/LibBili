@@ -29,7 +29,7 @@
                 "--configuration",
                 "Release",
                 "--runtime",
-                "win-x64"
+                "ubuntu.20.04-x64"
             ],
             "problemMatcher": "$msCompile"
         },
