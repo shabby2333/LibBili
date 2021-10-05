@@ -1,5 +1,4 @@
-﻿using LibBili.Danmaku.Util;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +8,7 @@ using System.Text;
 
 
 
-namespace LibBili.Danmaku.Model
+namespace LibBili.Danmaku
 {
     /// <summary>
     /// 弹幕数据包头部

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace LibBili.Danmaku.Model
+namespace LibBili.Danmaku
 {
     public struct Packet
     {

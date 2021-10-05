@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace LibBili.Danmaku.Model
+namespace LibBili.Danmaku
 {
     public struct Danmaku
     {

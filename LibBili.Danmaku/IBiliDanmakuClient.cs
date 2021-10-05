@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace LibBili.Danmaku.Interface
+namespace LibBili.Danmaku
 {
     public abstract class IBiliDanmakuClient : IDisposable
     {
@@ -174,7 +174,7 @@ namespace LibBili.Danmaku.Interface
             switch (json["cmd"].ToString())
             {
                 case "DANMU_MSG":
-                    var danmaku = new Model.Danmaku
+                    var danmaku = new Danmaku
                     {
                         UserID = json["info"][2][0].Value<int>(),
                         UserName = json["info"][2][1].ToString(),

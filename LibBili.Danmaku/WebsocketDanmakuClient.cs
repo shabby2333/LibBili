@@ -1,5 +1,4 @@
 ﻿using LibBili.Api.Util;
-using LibBili.Danmaku.Util;
 using Newtonsoft.Json.Linq;
 using SuperSocket.ClientEngine.Proxy;
 using System;
@@ -10,12 +9,11 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using System.Timers;
 using WebSocket4Net;
 
-namespace LibBili.Danmaku.Model
+namespace LibBili.Danmaku
 {
-    public class WebsocketDanmakuClient : Interface.IBiliDanmakuClient
+    public class WebsocketDanmakuClient : IBiliDanmakuClient
     {
         private WebSocket _ws;
         private CookieContainer _cookies = new();
