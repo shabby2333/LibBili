@@ -1,4 +1,5 @@
-﻿using LibBili.Danmaku.Model;
+﻿using LibBili.Api.Util;
+using LibBili.Danmaku.Model;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -151,13 +152,13 @@ namespace LibBili.Danmaku
             switch (header.Operation)
             {
                 case Operation.AuthorityResponse:
-                    Open?.Invoke(this, null);
+                    Open?.Emit(this, null);
                     //Console.WriteLine($"Authority Response:{Encoding.UTF8.GetString(bytes, 16, bytes.Length - 16) == "{\"code\":0}"}");
                     break;
                 case Operation.HeartBeatResponse:
                     Array.Reverse(packet.PacketBody);
                     var popularity = BitConverter.ToInt32(packet.PacketBody);
-                    UpdatePopularity?.Invoke(this, popularity);
+                    UpdatePopularity?.Emit(this, popularity);
                     break;
                 case Operation.ServerNotify:
                     ProcessNotice(Encoding.UTF8.GetString(packet.PacketBody));
@@ -169,7 +170,7 @@ namespace LibBili.Danmaku
         protected void ProcessNotice(string rawMessage)
         {
             var json = JObject.Parse(rawMessage);
-            ReceiveNotice?.Invoke(this, new ReceiveNoticeEventArgs { RawMessage = rawMessage, JsonMessage = json });
+            ReceiveNotice?.Emit(this, new ReceiveNoticeEventArgs { RawMessage = rawMessage, JsonMessage = json });
             //Debug.WriteLine(rawMessage);
             switch (json["cmd"].ToString())
             {
@@ -183,7 +184,7 @@ namespace LibBili.Danmaku
                         IsVIP = json["info"][2][3].ToString() == "1",
                         UserGuardLevel = json["info"][7].Value<int>()
                     };
-                    ReceiveDanmaku?.Invoke(this, new ReceiveDanmakuEventArgs { Danmaku = danmaku, JsonMessage = json, RawMessage = rawMessage });
+                    ReceiveDanmaku?.Emit(this, new ReceiveDanmakuEventArgs { Danmaku = danmaku, JsonMessage = json, RawMessage = rawMessage });
                     //Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{RoomID}]-弹幕:{(danmaku.IsAdmin?"房":"")}{(danmaku.IsVIP?"爷":"")} {danmaku.UserName + ":"}{danmaku.Text}");
                     break;
                 case "SEND_GIFT":
@@ -194,7 +195,7 @@ namespace LibBili.Danmaku
                         UserID = json["data"]["uid"].ToObject<int>(),
                         GiftCount = json["data"]["num"].ToObject<int>()
                     };
-                    ReceiveGift?.Invoke(this, new ReceiveGiftEventArgs { Gift = gift, JsonMessage = json, RawMessage = rawMessage });
+                    ReceiveGift?.Emit(this, new ReceiveGiftEventArgs { Gift = gift, JsonMessage = json, RawMessage = rawMessage });
                     break;
                 case "ROOM_REAL_TIME_MESSAGE_UPDATE":
                     break;
@@ -205,7 +206,7 @@ namespace LibBili.Danmaku
                 case "ONLINERANK":
                     break;
                 case "LIVE":
-                    LiveStart?.Invoke(this, null);
+                    LiveStart?.Emit(this, null);
                     break;
                 case "PREPARING":
                     break;

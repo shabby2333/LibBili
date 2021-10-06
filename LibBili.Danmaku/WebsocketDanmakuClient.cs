@@ -1,21 +1,21 @@
 ﻿using LibBili.Api.Util;
 using Newtonsoft.Json.Linq;
-using SuperSocket.ClientEngine.Proxy;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
-using WebSocket4Net;
+using Websocket.Client;
 
 namespace LibBili.Danmaku
 {
     public class WebsocketDanmakuClient : IBiliDanmakuClient
     {
-        private WebSocket _ws;
+        private WebsocketClient _ws;
         private CookieContainer _cookies = new();
         private HttpClient _http;
         private string _url = "wss://hw-bj-live-comet-05.chat.bilibili.com/sub";
@@ -26,7 +26,7 @@ namespace LibBili.Danmaku
         public async override void Connect()
         {
             //尝试释放已连接的ws
-            _ws?.Close();
+            _ws?.Stop(WebSocketCloseStatus.Empty, string.Empty);
             _ws?.Dispose();
 
             if(!RealRoomID.HasValue){
@@ -39,20 +39,29 @@ namespace LibBili.Danmaku
             var info = await GetDanmakuLinkInfoAsync(RealRoomID.Value);
             _url = $"wss://{info["host_list"][0]["host"]}:{info["host_list"][0]["wss_port"]}/sub";
             _token = info["token"].ToString();
-            _ws = new WebSocket(_url, cookies: _cookies.GetCookies(new Uri(_url)).ToDictionary().AsEnumerable().ToList());
+            _ws = new WebsocketClient(new Uri(_url), () => new System.Net.WebSockets.ClientWebSocket { Options = { Cookies = _cookies} });
             //_ws.Proxy = new HttpConnectProxy(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8888));
 
-            _ws.Opened += (sender, e) => OnOpen();
-            _ws.DataReceived += (sender, e) => ProcessPacket(e.Data);
+            //_ws. += (sender, e) => OnOpen();
+            _ws.MessageReceived.Subscribe(e => ProcessPacket(e.Binary));
             //TODO: 关闭及异常事件处理
-            _ws.Closed += (sender, e) => { Console.WriteLine("WS CLOSED"); Connected = false; };
-            _ws.Error += (sender, e) => {Console.WriteLine("WS err" + e.Exception.Message); Connected = false;};
-        _ws.Open();
+            _ws.DisconnectionHappened.Subscribe(e =>
+            {
+                if (e.CloseStatus == WebSocketCloseStatus.Empty) { Console.WriteLine("WS CLOSED"); Connected = false; }
+                else
+                {
+                    Console.WriteLine("WS err" + e.Exception.Message); Connected = false;
+                }
+
+            });
+            await _ws.Start();
+            if(_ws.IsStarted)
+                OnOpen();
         }
 
         public override void Disconnect()
         {
-            _ws?.Close();
+            _ws?.Stop(WebSocketCloseStatus.Empty, string.Empty);
             _ws?.Dispose();
         }
 
@@ -62,7 +71,7 @@ namespace LibBili.Danmaku
             //throw new NotImplementedException();
         }
 
-        public override void Send(byte[] packet) => _ws.Send(packet, 0, packet.Length);
+        public override void Send(byte[] packet) => _ws.Send(packet);
         public override void Send(Packet packet) => Send(packet.ToBytes);
         public override Task SendAsync(byte[] packet) => Task.Run(() => Send(packet));
         public override Task SendAsync(Packet packet) => SendAsync(packet.ToBytes);
