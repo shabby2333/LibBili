@@ -16,8 +16,8 @@ namespace LibBili.Danmaku
     public class WebsocketDanmakuClient : IBiliDanmakuClient
     {
         private WebsocketClient _ws;
-        private CookieContainer _cookies = new();
-        private HttpClient _http;
+        private readonly CookieContainer _cookies = new();
+        private readonly HttpClient _http;
         private string _url = "wss://hw-bj-live-comet-05.chat.bilibili.com/sub";
 
         public WebsocketDanmakuClient(long roomID) : this(roomID, null) { }
@@ -34,27 +34,25 @@ namespace LibBili.Danmaku
                 RealRoomID = (long)resp["room_info"]["room_id"];
             }
 
-            //System.Console.WriteLine("realroomId: " + RealRoomID);
             //根据房间号获取弹幕服务器地址信息及验证信息
             var info = await GetDanmakuLinkInfoAsync(RealRoomID.Value);
             _url = $"wss://{info["host_list"][0]["host"]}:{info["host_list"][0]["wss_port"]}/sub";
             _token = info["token"].ToString();
-            _ws = new WebsocketClient(new Uri(_url), () => new System.Net.WebSockets.ClientWebSocket { Options = { Cookies = _cookies} });
-            //_ws.Proxy = new HttpConnectProxy(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8888));
+            _ws = new WebsocketClient(new Uri(_url), () => new ClientWebSocket { Options = { Cookies = _cookies } });
 
-            //_ws. += (sender, e) => OnOpen();
             _ws.MessageReceived.Subscribe(e => ProcessPacket(e.Binary));
             //TODO: 关闭及异常事件处理
             _ws.DisconnectionHappened.Subscribe(e =>
             {
-                if (e.CloseStatus == WebSocketCloseStatus.Empty) { Console.WriteLine("WS CLOSED"); Connected = false; }
+                if (e.CloseStatus == WebSocketCloseStatus.Empty) 
+                    Console.WriteLine("WS CLOSED");
                 else
-                {
-                    Console.WriteLine("WS err" + e.Exception.Message); Connected = false;
-                }
+                    Console.WriteLine("WS ERROR: " + e.Exception.Message); 
+                Connected = false;
 
             });
             await _ws.Start();
+            // 如果成功连接ws 触发onopen事件，发送初始包
             if(_ws.IsStarted)
                 OnOpen();
         }
@@ -67,8 +65,11 @@ namespace LibBili.Danmaku
 
         public override void Dispose()
         {
-            GC.SuppressFinalize(this);
-            //throw new NotImplementedException();
+            Disconnect();
+            _http?.Dispose();
+            
+            // GC.SuppressFinalize(this);
+            // throw new NotImplementedException();
         }
 
         public override void Send(byte[] packet) => _ws.Send(packet);
