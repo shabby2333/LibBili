@@ -17,7 +17,6 @@ namespace LibBili.Danmaku
     {
         public const int PACKET_HEADER_LENGTH = 16;
 
-
         public int PacketLength;
         public short HeaderLength;
         public ProtocolVersion ProtocolVersion;
@@ -46,37 +45,11 @@ namespace LibBili.Danmaku
             SequenceId = BitConverter.ToInt32(b[12..16]);
         }
 
-
         /// <summary>
         /// 生成弹幕协议的头部
         /// </summary>
         /// <returns>所对应的弹幕头部byte数组</returns>
         public byte[] ToBytes => GetBytes(PacketLength, HeaderLength, ProtocolVersion, Operation, SequenceId);
-
-        public override bool Equals(object obj)
-        {
-            return obj is PacketHeader header && Equals(header);
-        }
-
-        public bool Equals(PacketHeader other)
-        {
-            return EqualityComparer<byte[]>.Default.Equals(ToBytes, other.ToBytes);
-        }
-
-        public override int GetHashCode()
-        {
-            return -810706433 + EqualityComparer<byte[]>.Default.GetHashCode(ToBytes);
-        }
-
-        public static bool operator ==(PacketHeader left, PacketHeader right)
-        {
-            return left.Equals(right);
-        }
-
-        public static bool operator !=(PacketHeader left, PacketHeader right)
-        {
-            return !(left == right);
-        }
 
         /// <summary>
         /// 生成弹幕协议的头部
@@ -104,6 +77,16 @@ namespace LibBili.Danmaku
             
             return bytes;
         }
+
+        public override bool Equals(object obj) => obj is PacketHeader header && Equals(header);
+
+        public bool Equals(PacketHeader other) => EqualityComparer<byte[]>.Default.Equals(ToBytes, other.ToBytes);
+
+        public override int GetHashCode() => -810706433 + EqualityComparer<byte[]>.Default.GetHashCode(ToBytes);
+
+        public static bool operator ==(PacketHeader left, PacketHeader right) => left.Equals(right);
+
+        public static bool operator !=(PacketHeader left, PacketHeader right) => !(left == right);
     }
 
     /// <summary>
