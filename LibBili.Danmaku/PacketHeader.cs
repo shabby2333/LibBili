@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,17 +33,12 @@ namespace LibBili.Danmaku
         {
             if (bytes.Length < PACKET_HEADER_LENGTH) throw new ArgumentException("No Supported Protocol Header");
 
-            Array.Reverse(bytes, 0, 4);
-            Array.Reverse(bytes, 4, 2);
-            Array.Reverse(bytes, 6, 2);
-            Array.Reverse(bytes, 8, 4);
-            Array.Reverse(bytes, 12, 4);
             var b = bytes.AsSpan();
-            PacketLength = BitConverter.ToInt32(b[0..4]);
-            HeaderLength = BitConverter.ToInt16(b[4..6]);
-            ProtocolVersion = (ProtocolVersion)BitConverter.ToInt16(b[6..8]);
-            Operation = (Operation)BitConverter.ToInt32(b[8..12]);
-            SequenceId = BitConverter.ToInt32(b[12..16]);
+            PacketLength = BinaryPrimitives.ReadInt32BigEndian(b[0..4]);
+            HeaderLength = BinaryPrimitives.ReadInt16BigEndian(b[4..6]);
+            ProtocolVersion = (ProtocolVersion)BinaryPrimitives.ReadInt16BigEndian(b[6..8]);
+            Operation = (Operation)BinaryPrimitives.ReadInt32BigEndian(b[8..12]);
+            SequenceId = BinaryPrimitives.ReadInt32BigEndian(b[12..16]);
         }
 
         /// <summary>
@@ -54,28 +50,22 @@ namespace LibBili.Danmaku
         /// <summary>
         /// 生成弹幕协议的头部
         /// </summary>
-        /// <param name="PacketLength">消息数据包长度</param>
-        /// <param name="HeaderLength">头部长度</param>
-        /// <param name="ProtocolVersion">弹幕协议版本</param>
-        /// <param name="Operation">数据包操作</param>
-        /// <param name="SequenceId">序列号</param>
+        /// <param name="packetLength">消息数据包长度</param>
+        /// <param name="headerLength">头部长度</param>
+        /// <param name="protocolVersion">弹幕协议版本</param>
+        /// <param name="operation">数据包操作</param>
+        /// <param name="sequenceId">序列号</param>
         /// <returns></returns>
-        public static byte[] GetBytes(int PacketLength, short HeaderLength, ProtocolVersion ProtocolVersion, Operation Operation, int SequenceId = 1)
+        public static byte[] GetBytes(int packetLength, short headerLength, ProtocolVersion protocolVersion, Operation operation, int sequenceId = 1)
         {
-            var bytes = new byte[PACKET_HEADER_LENGTH];
-            Array.Copy(BitConverter.GetBytes(PacketLength), 0, bytes, 0, 4);
-            Array.Copy(BitConverter.GetBytes(HeaderLength), 0, bytes, 4, 2);
-            Array.Copy(BitConverter.GetBytes((short)ProtocolVersion), 0, bytes, 6, 2);
-            Array.Copy(BitConverter.GetBytes((int)Operation), 0, bytes, 8, 4);
-            Array.Copy(BitConverter.GetBytes(SequenceId), 0, bytes, 12, 4);
-
-            Array.Reverse(bytes, 0, 4);
-            Array.Reverse(bytes, 4, 2);
-            Array.Reverse(bytes, 6, 2);
-            Array.Reverse(bytes, 8, 4);
-            Array.Reverse(bytes, 12, 4);
+            var bytes = new byte[PACKET_HEADER_LENGTH].AsSpan();
+            BinaryPrimitives.WriteInt32BigEndian(bytes[0..4], packetLength);
+            BinaryPrimitives.WriteInt16BigEndian(bytes[4..6], headerLength);
+            BinaryPrimitives.WriteInt16BigEndian(bytes[6..8], (short)protocolVersion);
+            BinaryPrimitives.WriteInt32BigEndian(bytes[8..12], (int)operation);
+            BinaryPrimitives.WriteInt32BigEndian(bytes[12..16], sequenceId);
             
-            return bytes;
+            return bytes.ToArray();
         }
 
         public override bool Equals(object obj) => obj is PacketHeader header && Equals(header);
