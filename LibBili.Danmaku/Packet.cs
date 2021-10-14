@@ -23,14 +23,14 @@ namespace LibBili.Danmaku
         public int Length { get => Header.PacketLength; }
         public byte[] PacketBody;
 
-        public Packet(ref byte[] bytes)
+        public Packet(ReadOnlySpan<byte> bytes)
         {
             var headerBuffer = bytes[0..PacketHeader.PACKET_HEADER_LENGTH];
             Header = new PacketHeader(headerBuffer);
-            PacketBody = bytes[Header.HeaderLength..Header.PacketLength];
+            PacketBody = bytes[Header.HeaderLength..Header.PacketLength].ToArray();
         }
 
-        public Packet(Operation operation,byte[] body = null)
+        public Packet(Operation operation, byte[] body = null)
         {
             Header = new PacketHeader
             {

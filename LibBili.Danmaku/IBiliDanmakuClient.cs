@@ -125,10 +125,8 @@ namespace LibBili.Danmaku
             
         }
 
-
-
-        protected void ProcessPacket(byte[] bytes) =>
-            ProcessPacketAsync(new Packet(ref bytes));
+        protected void ProcessPacket(ReadOnlySpan<byte> bytes) =>
+            ProcessPacketAsync(new Packet(bytes));
 
         protected async void ProcessPacketAsync(Packet packet)
         {

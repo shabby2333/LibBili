@@ -29,11 +29,11 @@ namespace LibBili.Danmaku
         /// 构造方法
         /// </summary>
         /// <param name="bytes">弹幕头16字节</param>
-        public PacketHeader(byte[] bytes)
+        public PacketHeader(ReadOnlySpan<byte> bytes)
         {
             if (bytes.Length < PACKET_HEADER_LENGTH) throw new ArgumentException("No Supported Protocol Header");
 
-            var b = bytes.AsSpan();
+            var b = bytes;
             PacketLength = BinaryPrimitives.ReadInt32BigEndian(b[0..4]);
             HeaderLength = BinaryPrimitives.ReadInt16BigEndian(b[4..6]);
             ProtocolVersion = (ProtocolVersion)BinaryPrimitives.ReadInt16BigEndian(b[6..8]);
