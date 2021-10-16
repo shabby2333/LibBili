@@ -105,7 +105,8 @@ namespace LibBili.Danmaku
                     protover = (int)protocolVersion, 
                     key = token, 
                     platform = "web", 
-                    clientver="2.1.7", 
+                    // 2021.10.16 抓包发现目前不传输clientver信息
+                    //clientver="2.1.7", 
                     type = 2  }));
             return new Packet
             {
