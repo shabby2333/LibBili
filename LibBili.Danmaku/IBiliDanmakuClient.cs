@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Net.Http;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +20,8 @@ namespace LibBili.Danmaku
         public bool Connected { get; protected set; }
         protected Timer _timer = null;
         protected string _token;
+        protected readonly CookieContainer _cookies = new();
+        protected readonly HttpClient _http;
 
         /// <summary>
         /// 弹幕连接建立
@@ -98,11 +102,13 @@ namespace LibBili.Danmaku
         public IBiliDanmakuClient(long roomID)
         {
             RoomID = roomID;
+            _http = new HttpClient(new HttpClientHandler { CookieContainer = _cookies });
         }
         public IBiliDanmakuClient(long roomID, long? realRoomID)
         {
             RealRoomID = realRoomID;
             RoomID = roomID;
+            _http = new HttpClient(new HttpClientHandler { CookieContainer = _cookies });
         }
 
         public abstract void Connect();
@@ -251,6 +257,19 @@ namespace LibBili.Danmaku
                 len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
                 yield return new Packet { Header = header, PacketBody = buffer };
             }
+        }
+
+
+        protected async Task<JToken> GetDanmakuLinkInfoAsync(long roomID)
+        {
+            var resp = await _http.GetStringAsync($"https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={roomID}&type=0");
+            return JObject.Parse(resp)["data"];
+        }
+
+        protected async Task<JToken> GetRoomInfoAsync(long roomID)
+        {
+            var resp = await _http.GetStringAsync($"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={roomID}");
+            return JObject.Parse(resp)["data"];
         }
     }
 

@@ -16,12 +16,10 @@ namespace LibBili.Danmaku
     public class WebsocketDanmakuClient : IBiliDanmakuClient
     {
         private WebsocketClient _ws;
-        private readonly CookieContainer _cookies = new();
-        private readonly HttpClient _http;
         private string _url = "wss://hw-bj-live-comet-05.chat.bilibili.com/sub";
 
         public WebsocketDanmakuClient(long roomID) : this(roomID, null) { }
-        public WebsocketDanmakuClient(long roomID, long? realRoomID) : base(roomID, realRoomID){ _http = new HttpClient(new HttpClientHandler { CookieContainer = _cookies }); }
+        public WebsocketDanmakuClient(long roomID, long? realRoomID) : base(roomID, realRoomID){  }
 
         public async override void Connect()
         {
@@ -30,8 +28,13 @@ namespace LibBili.Danmaku
             _ws?.Dispose();
 
             if(!RealRoomID.HasValue){
-                var resp = await GetRoomInfoAsync(RoomID);
-                RealRoomID = (long)resp["room_info"]["room_id"];
+                if (RoomID < 10000)
+                {
+                    var resp = await GetRoomInfoAsync(RoomID);
+                    RealRoomID = (long)resp["room_info"]["room_id"];
+                }
+                else
+                    RealRoomID = RoomID;
             }
 
             //根据房间号获取弹幕服务器地址信息及验证信息
@@ -72,22 +75,12 @@ namespace LibBili.Danmaku
             // throw new NotImplementedException();
         }
 
-        public override void Send(byte[] packet) => _ws.Send(packet);
+        public override void Send(byte[] packet) => _ws?.Send(packet);
         public override void Send(Packet packet) => Send(packet.ToBytes);
         public override Task SendAsync(byte[] packet) => Task.Run(() => Send(packet));
         public override Task SendAsync(Packet packet) => SendAsync(packet.ToBytes);
 
-        private async Task<JToken> GetDanmakuLinkInfoAsync(long roomID)
-        {
-           var resp =await _http.GetStringAsync($"https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={roomID}&type=0");
-           return JObject.Parse(resp)["data"];
-        }
-
-        private async Task<JToken> GetRoomInfoAsync(long roomID)
-        {
-           var resp =await _http.GetStringAsync($"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={roomID}");
-           return JObject.Parse(resp)["data"];
-        }
+        
 
         
     }
