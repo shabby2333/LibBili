@@ -82,6 +82,7 @@ namespace LibBili.Danmaku
         {
             Disconnect();
             _socket?.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public override void Send(byte[] packet) => _socket?.GetStream()?.Write(packet);

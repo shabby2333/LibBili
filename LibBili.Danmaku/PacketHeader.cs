@@ -14,7 +14,7 @@ namespace LibBili.Danmaku
     /// <summary>
     /// 弹幕数据包头部
     /// </summary>
-    public struct PacketHeader : IEquatable<PacketHeader>
+    public struct PacketHeader
     {
         public const int PACKET_HEADER_LENGTH = 16;
 
@@ -45,7 +45,7 @@ namespace LibBili.Danmaku
         /// 生成弹幕协议的头部
         /// </summary>
         /// <returns>所对应的弹幕头部byte数组</returns>
-        public byte[] ToBytes => GetBytes(PacketLength, HeaderLength, ProtocolVersion, Operation, SequenceId);
+        public static explicit operator ReadOnlySpan<byte>(PacketHeader header) => GetBytes(header.PacketLength, header.HeaderLength, header.ProtocolVersion, header.Operation, header.SequenceId);
 
         /// <summary>
         /// 生成弹幕协议的头部
@@ -68,15 +68,7 @@ namespace LibBili.Danmaku
             return bytes.ToArray();
         }
 
-        public override bool Equals(object obj) => obj is PacketHeader header && Equals(header);
 
-        public bool Equals(PacketHeader other) => EqualityComparer<byte[]>.Default.Equals(ToBytes, other.ToBytes);
-
-        public override int GetHashCode() => -810706433 + EqualityComparer<byte[]>.Default.GetHashCode(ToBytes);
-
-        public static bool operator ==(PacketHeader left, PacketHeader right) => left.Equals(right);
-
-        public static bool operator !=(PacketHeader left, PacketHeader right) => !(left == right);
     }
 
     /// <summary>

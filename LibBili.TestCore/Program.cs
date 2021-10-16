@@ -3,7 +3,7 @@ using System;
 
 Console.Write("请输入房间号：");
 var roomID = Convert.ToInt64(Console.ReadLine());
-var ws = new TcpDanmakuClient(roomID);
+var ws = new WebsocketDanmakuClient(roomID);
 //for (int i = 0; i < 500; i++)
 //{
 //    ws = new WebsocketDanmakuClient(roomID);

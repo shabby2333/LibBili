@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -50,7 +51,7 @@ namespace LibBili.Danmaku
                 else
                     Header.PacketLength = Header.HeaderLength;
                 var arr = new byte[Header.PacketLength];
-                Array.Copy(Header.ToBytes, arr, Header.HeaderLength);
+                Array.Copy(((ReadOnlySpan<byte>)Header).ToArray(), arr, Header.HeaderLength);
                 if (PacketBody != null)
                     Array.Copy(PacketBody, 0, arr, Header.HeaderLength, PacketBody.Length);
                 return arr;
@@ -100,8 +101,10 @@ namespace LibBili.Danmaku
         {
             var obj = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
                 new { 
-                    roomid = roomID, 
-                    uid = uid, 
+                    roomid = roomID,
+#pragma warning disable IDE0037 // 使用推断的成员名称
+                    uid = uid,
+#pragma warning restore IDE0037 // 使用推断的成员名称
                     protover = (int)protocolVersion, 
                     key = token, 
                     platform = "web", 

@@ -70,9 +70,7 @@ namespace LibBili.Danmaku
         {
             Disconnect();
             _http?.Dispose();
-            
-            // GC.SuppressFinalize(this);
-            // throw new NotImplementedException();
+            GC.SuppressFinalize(this);
         }
 
         public override void Send(byte[] packet) => _ws?.Send(packet);

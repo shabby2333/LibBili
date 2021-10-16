@@ -5,7 +5,7 @@ using System.Text;
 
 namespace LibBili.Api.Interface
 {
-    public interface Ilogger
+    public interface ILogger
     {
         
     }
