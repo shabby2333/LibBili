@@ -93,18 +93,17 @@ namespace LibBili.Danmaku
         /// <summary>
         /// 生成验证用数据包
         /// </summary>
-        /// <param name="roomID"></param>
-        /// <param name="token"></param>
-        /// <param name="uid"></param>
-        /// <returns></returns>
+        /// <param name="roomID">房间号</param>
+        /// <param name="token">http请求获取的token</param>
+        /// <param name="uid">个人UID</param>
+        /// <param name="protocolVersion">协议版本</param>
+        /// <returns>验证请求数据包</returns>
         public static Packet Authority(long roomID, string token,int uid = 0, ProtocolVersion protocolVersion = ProtocolVersion.Brotli)
         {
             var obj = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
                 new { 
                     roomid = roomID,
-#pragma warning disable IDE0037 // 使用推断的成员名称
                     uid = uid,
-#pragma warning restore IDE0037 // 使用推断的成员名称
                     protover = (int)protocolVersion, 
                     key = token, 
                     platform = "web", 

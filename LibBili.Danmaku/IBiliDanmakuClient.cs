@@ -2,6 +2,7 @@
 using LibBili.Danmaku.Model;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -142,11 +143,11 @@ namespace LibBili.Danmaku
                 case ProtocolVersion.HeartBeat:
                     break;
                 case ProtocolVersion.Zlib:
-                    await foreach (var packet1 in await ZlibDeCompressAsync(packet.PacketBody))
+                    await foreach (var packet1 in ZlibDeCompressAsync(packet.PacketBody))
                         ProcessPacketAsync(packet1);
                     return;
                 case ProtocolVersion.Brotli:
-                    await foreach (var packet1 in await BrotliDecompressAsync(packet.PacketBody))
+                    await foreach (var packet1 in BrotliDecompressAsync(packet.PacketBody))
                         ProcessPacketAsync(packet1);
                     return;
                 default:
@@ -224,36 +225,42 @@ namespace LibBili.Danmaku
             }
         }
 
-        protected static async ValueTask<IAsyncEnumerable<Packet>> ZlibDeCompressAsync(byte[] bytes)
+        protected static async IAsyncEnumerable<Packet> ZlibDeCompressAsync(byte[] bytes)
         {
-            //Skip Zlib Header
+            // Skip Zlib Header
             // @see https://stackoverflow.com/questions/9050260/what-does-a-zlib-header-look-like
             // 78 01 - No Compression/low
             // 78 9C - Default Compression
             // 78 DA - Best Compression 
             await using var ms = new MemoryStream(bytes, 2, bytes.Length - 2);
+            // await using var ms = new MemoryStream(bytes, 0, bytes.Length);
             await using var zs = new DeflateStream(ms, CompressionMode.Decompress);
-            return GetPackets(zs);
-        }
-
-        protected static async ValueTask<IAsyncEnumerable<Packet>> BrotliDecompressAsync(byte[] bytes)
-        {
-            await using var ms = new MemoryStream(bytes, 0, bytes.Length);
-            await using var zs = new BrotliStream(ms, CompressionMode.Decompress);
-            return GetPackets(zs);
-        }
-
-        protected static async IAsyncEnumerable<Packet> GetPackets(Stream stream)
-        {
             var len = 1;
             while (len > 0)
             {
                 var headerBuffer = new byte[PacketHeader.PACKET_HEADER_LENGTH];
-                len = await stream.ReadAsync(headerBuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
+                len = await zs.ReadAsync(headerBuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
                 if (len == 0) break;
                 var header = new PacketHeader(headerBuffer);
-                var buffer = new byte[header.BodyLength];
-                len = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length));
+                var buffer = ArrayPool<byte>.Shared.Rent(header.BodyLength);
+                len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
+                yield return new Packet { Header = header, PacketBody = buffer };
+            }
+        }
+
+        protected static async IAsyncEnumerable<Packet> BrotliDecompressAsync(byte[] bytes)
+        {
+            await using var ms = new MemoryStream(bytes, 0, bytes.Length);
+            await using var zs = new BrotliStream(ms, CompressionMode.Decompress);
+            var len = 1;
+            while (len > 0)
+            {
+                var headerBuffer = new byte[PacketHeader.PACKET_HEADER_LENGTH];
+                len = await zs.ReadAsync(headerBuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
+                if (len == 0) break;
+                var header = new PacketHeader(headerBuffer);
+                var buffer = ArrayPool<byte>.Shared.Rent(header.BodyLength);
+                len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
                 yield return new Packet { Header = header, PacketBody = buffer };
             }
         }
