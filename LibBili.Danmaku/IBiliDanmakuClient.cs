@@ -99,12 +99,7 @@ namespace LibBili.Danmaku
         /// </summary>
         //public event EventHandler Interact;
 
-        public IBiliDanmakuClient(long roomID)
-        {
-            RoomID = roomID;
-            _http = new HttpClient(new HttpClientHandler { CookieContainer = _cookies });
-        }
-        public IBiliDanmakuClient(long roomID, long? realRoomID)
+        public IBiliDanmakuClient(long roomID, long? realRoomID = null)
         {
             RealRoomID = realRoomID;
             RoomID = roomID;
@@ -123,12 +118,9 @@ namespace LibBili.Danmaku
             SendAsync(Packet.Authority(RealRoomID.Value, _token));
             Connected = true;
 
-            if(_timer != null)
-                _timer.Dispose();
+            _timer?.Dispose();
             _timer = new Timer((e) => (
-            (IBiliDanmakuClient)e)?.SendAsync(Packet.HeartBeat())
-            , this, 0, 30 * 1000);
-            
+                (IBiliDanmakuClient)e)?.SendAsync(Packet.HeartBeat()), this, 0, 30 * 1000);
         }
 
         protected void ProcessPacket(ReadOnlySpan<byte> bytes) =>
@@ -151,7 +143,8 @@ namespace LibBili.Danmaku
                         ProcessPacketAsync(packet1);
                     return;
                 default:
-                    throw new Exception();
+                    throw new NotSupportedException(
+                        "New bilibili danmaku protocol appears, please contact the author if you see this Exception.");
             }
             switch (header.Operation)
             {
@@ -167,7 +160,12 @@ namespace LibBili.Danmaku
                 case Operation.ServerNotify:
                     ProcessNotice(Encoding.UTF8.GetString(packet.PacketBody));
                     break;
-
+                // HeartBeat packet request, only send by client
+                case Operation.HeartBeat:
+                // This operation key only used for sending authority packet by client
+                case Operation.Authority:
+                default:
+                    break;
             }
         }
 
@@ -175,90 +173,84 @@ namespace LibBili.Danmaku
         {
             var json = JObject.Parse(rawMessage);
             ReceiveNotice?.Emit(this, new ReceiveNoticeEventArgs { RawMessage = rawMessage, JsonMessage = json });
-            //Debug.WriteLine(rawMessage);
-            switch (json["cmd"].ToString())
+            switch (json["cmd"]?.ToString())
             {
                 case "DANMU_MSG":
-                    var danmaku = new Danmaku
+                    ReceiveDanmaku?.Emit(this, new ReceiveDanmakuEventArgs
                     {
-                        UserID = json["info"][2][0].Value<int>(),
-                        UserName = json["info"][2][1].ToString(),
-                        Text = json["info"][1].ToString(),
-                        IsAdmin = json["info"][2][2].ToString() == "1",
-                        IsVIP = json["info"][2][3].ToString() == "1",
-                        UserGuardLevel = json["info"][7].Value<int>()
-                    };
-                    ReceiveDanmaku?.Emit(this, new ReceiveDanmakuEventArgs { Danmaku = danmaku, JsonMessage = json, RawMessage = rawMessage });
-                    //Console.WriteLine($"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{RoomID}]-弹幕:{(danmaku.IsAdmin?"房":"")}{(danmaku.IsVIP?"爷":"")} {danmaku.UserName + ":"}{danmaku.Text}");
+                        Danmaku = new Danmaku
+                        {
+                            UserID = json["info"][2][0].Value<int>(),
+                            UserName = json["info"][2][1].ToString(),
+                            Text = json["info"][1].ToString(),
+                            IsAdmin = json["info"][2][2].ToString() == "1",
+                            IsVIP = json["info"][2][3].ToString() == "1",
+                            UserGuardLevel = json["info"][7].Value<int>()
+                        },
+                        JsonMessage = json, RawMessage = rawMessage
+                    });
                     break;
                 case "SEND_GIFT":
-                    var gift = new Gift
+                    ReceiveGift?.Emit(this, new ReceiveGiftEventArgs
                     {
-                        GiftName = json["data"]["giftName"].ToString(),
-                        UserName = json["data"]["uname"].ToString(),
-                        UserID = json["data"]["uid"].ToObject<int>(),
-                        GiftCount = json["data"]["num"].ToObject<int>()
-                    };
-                    ReceiveGift?.Emit(this, new ReceiveGiftEventArgs { Gift = gift, JsonMessage = json, RawMessage = rawMessage });
-                    break;
-                case "ROOM_REAL_TIME_MESSAGE_UPDATE":
-                    break;
-                case "INTERACT_WORD":
-                    //Console.WriteLine(rawMessage);
-
-                    break;
-                case "ONLINERANK":
+                        Gift = new Gift
+                        {
+                            GiftName = json["data"]["giftName"].ToString(),
+                            UserName = json["data"]["uname"].ToString(),
+                            UserID = json["data"]["uid"].ToObject<int>(),
+                            GiftCount = json["data"]["num"].ToObject<int>()
+                        },
+                        JsonMessage = json, RawMessage = rawMessage
+                    });
                     break;
                 case "LIVE":
                     LiveStart?.Emit(this, null);
                     break;
+                case "ROOM_REAL_TIME_MESSAGE_UPDATE":
+                case "INTERACT_WORD":
+                case "ONLINERANK":
                 case "PREPARING":
-                    break;
                 case "CUT":
-                    break;
                 case "SEND_TOP":
-                    break;
                 case "ROOM_RANK":
                     break;
 
             }
         }
 
-        protected static async IAsyncEnumerable<Packet> ZlibDeCompressAsync(byte[] bytes)
+        protected static async ValueTask<IAsyncEnumerable<Packet>> ZlibDeCompressAsync(byte[] bytes)
         {
             //Skip Zlib Header
-            using var ms = new MemoryStream(bytes, 2, bytes.Length - 2);
-            using var zs = new DeflateStream(ms, CompressionMode.Decompress);
-            var len = 1;
-            while(len > 0)
-            {
-                var headerbuffer = new byte[PacketHeader.PACKET_HEADER_LENGTH];
-                len = await zs.ReadAsync(headerbuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
-                if (len == 0) break;
-                var header = new PacketHeader(headerbuffer);
-                var buffer = new byte[header.BodyLength];
-                len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
-                yield return new Packet { Header = header, PacketBody = buffer };
-            }
+            // @see https://stackoverflow.com/questions/9050260/what-does-a-zlib-header-look-like
+            // 78 01 - No Compression/low
+            // 78 9C - Default Compression
+            // 78 DA - Best Compression 
+            await using var ms = new MemoryStream(bytes, 2, bytes.Length - 2);
+            await using var zs = new DeflateStream(ms, CompressionMode.Decompress);
+            return GetPackets(zs);
         }
 
-        protected static async IAsyncEnumerable<Packet> BrotliDecompressAsync(byte[] bytes)
+        protected static async ValueTask<IAsyncEnumerable<Packet>> BrotliDecompressAsync(byte[] bytes)
         {
-            using var ms = new MemoryStream(bytes, 0, bytes.Length);
-            using var zs = new BrotliStream(ms, CompressionMode.Decompress);
+            await using var ms = new MemoryStream(bytes, 0, bytes.Length);
+            await using var zs = new BrotliStream(ms, CompressionMode.Decompress);
+            return GetPackets(zs);
+        }
+
+        protected static async IAsyncEnumerable<Packet> GetPackets(Stream stream)
+        {
             var len = 1;
             while (len > 0)
             {
-                var headerbuffer = new byte[PacketHeader.PACKET_HEADER_LENGTH];
-                len = await zs.ReadAsync(headerbuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
+                var headerBuffer = new byte[PacketHeader.PACKET_HEADER_LENGTH];
+                len = await stream.ReadAsync(headerBuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
                 if (len == 0) break;
-                var header = new PacketHeader(headerbuffer);
+                var header = new PacketHeader(headerBuffer);
                 var buffer = new byte[header.BodyLength];
-                len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
+                len = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length));
                 yield return new Packet { Header = header, PacketBody = buffer };
             }
         }
-
 
         protected async Task<JToken> GetDanmakuLinkInfoAsync(long roomID)
         {
