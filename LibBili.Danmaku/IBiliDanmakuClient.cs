@@ -16,7 +16,7 @@ namespace LibBili.Danmaku
     public abstract class IBiliDanmakuClient : IDisposable
     {
         public long RoomID { get; }
-        public long? RealRoomID { get; protected set;}
+        public long? RealRoomID { get; protected set; }
         public bool Connected { get; protected set; }
         protected Timer _timer = null;
         protected string _token;
@@ -27,76 +27,82 @@ namespace LibBili.Danmaku
         /// 弹幕连接建立
         /// </summary>
         public event EventHandler Open;
+
         /// <summary>
         /// 弹幕连接关闭
         /// </summary>
         public event EventHandler Close;
+
         /// <summary>
         /// 弹幕连接出现异常
         /// </summary>
         public event EventHandler<Exception> Error;
 
-        /// <summary>
-        /// 准备开播
-        /// </summary>
+        // /// <summary>
+        // /// 准备开播
+        // /// </summary>
         //public event EventHandler LivePrepare;
         /// <summary>
         /// 开播
         /// </summary>
         public event EventHandler LiveStart;
-        /// <summary>
-        /// 下播
-        /// </summary>
+        // /// <summary>
+        // /// 下播
+        // /// </summary>
         //public event EventHandler LiveEnd;
-        /// <summary>
-        /// 直播被切
-        /// </summary>
+        // /// <summary>
+        // /// 直播被切
+        // /// </summary>
         //public event EventHandler LiveCut;
 
         /// <summary>
         /// 收到弹幕
         /// </summary>
         public event EventHandler<ReceiveDanmakuEventArgs> ReceiveDanmaku;
+
         /// <summary>
         /// 收到礼物
         /// </summary>
         public event EventHandler<ReceiveGiftEventArgs> ReceiveGift;
+
         /// <summary>
         /// 所有<code>Operation.ServerNotify</code>内容 包含头部原始数据
         /// </summary>
         public event EventHandler<ReceiveNoticeEventArgs> ReceiveNotice;
+
         /// <summary>
         /// 更新人气
         /// </summary>
         public event EventHandler<int> UpdatePopularity;
-        /// <summary>
-        /// 更新礼物榜
-        /// </summary>
+
+        // /// <summary>
+        // /// 更新礼物榜
+        // /// </summary>
         //public event EventHandler UpdateGiftTop;
         /// <summary>
         /// 欢迎
         /// </summary>
         public event EventHandler Welcome;
-        /// <summary>
-        /// 欢迎老爷
-        /// </summary>
+        // /// <summary>
+        // /// 欢迎老爷
+        // /// </summary>
         //public event EventHandler WelcomeVip;
-        /// <summary>
-        /// 欢迎船员
-        /// </summary>
+        // /// <summary>
+        // /// 欢迎船员
+        // /// </summary>
         //public event EventHandler WelcomeGuard;
 
-        /// <summary>
-        /// 上船
-        /// </summary>
+        // /// <summary>
+        // /// 上船
+        // /// </summary>
         //public event EventHandler GuardBuy;
-        /// <summary>
-        /// 
-        /// </summary>
+        // /// <summary>
+        // /// 
+        // /// </summary>
         //public event EventHandler SuperChat;
-        /// <summary>
-        /// 观众互动消息
-        /// </summary>
+        // /// <summary>
+        // /// 观众互动消息
+        // /// </summary>
         //public event EventHandler Interact;
 
         public IBiliDanmakuClient(long roomID, long? realRoomID = null)
@@ -114,8 +120,9 @@ namespace LibBili.Danmaku
         public abstract void Send(Packet packet);
         public abstract Task SendAsync(Packet packet);
 
-        protected virtual void OnOpen() {
-            SendAsync(Packet.Authority(RealRoomID.Value, _token));
+        protected virtual void OnOpen()
+        {
+            SendAsync(Packet.Authority(RealRoomID!.Value, _token));
             Connected = true;
 
             _timer?.Dispose();
@@ -135,22 +142,22 @@ namespace LibBili.Danmaku
                 case ProtocolVersion.HeartBeat:
                     break;
                 case ProtocolVersion.Zlib:
-                    await foreach (var packet1 in ZlibDeCompressAsync(packet.PacketBody))
+                    await foreach (var packet1 in await ZlibDeCompressAsync(packet.PacketBody))
                         ProcessPacketAsync(packet1);
                     return;
                 case ProtocolVersion.Brotli:
-                    await foreach (var packet1 in BrotliDecompressAsync(packet.PacketBody))
+                    await foreach (var packet1 in await BrotliDecompressAsync(packet.PacketBody))
                         ProcessPacketAsync(packet1);
                     return;
                 default:
                     throw new NotSupportedException(
                         "New bilibili danmaku protocol appears, please contact the author if you see this Exception.");
             }
+
             switch (header.Operation)
             {
                 case Operation.AuthorityResponse:
                     Open?.Emit(this, null);
-                    //Console.WriteLine($"Authority Response:{Encoding.UTF8.GetString(bytes, 16, bytes.Length - 16) == "{\"code\":0}"}");
                     break;
                 case Operation.HeartBeatResponse:
                     Array.Reverse(packet.PacketBody);
@@ -214,7 +221,6 @@ namespace LibBili.Danmaku
                 case "SEND_TOP":
                 case "ROOM_RANK":
                     break;
-
             }
         }
 
@@ -254,13 +260,15 @@ namespace LibBili.Danmaku
 
         protected async Task<JToken> GetDanmakuLinkInfoAsync(long roomID)
         {
-            var resp = await _http.GetStringAsync($"https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={roomID}&type=0");
+            var resp = await _http.GetStringAsync(
+                $"https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={roomID}&type=0");
             return JObject.Parse(resp)["data"];
         }
 
         protected async Task<JToken> GetRoomInfoAsync(long roomID)
         {
-            var resp = await _http.GetStringAsync($"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={roomID}");
+            var resp = await _http.GetStringAsync(
+                $"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={roomID}");
             return JObject.Parse(resp)["data"];
         }
     }
@@ -274,22 +282,25 @@ namespace LibBili.Danmaku
         /// 进入
         /// </summary>
         Enter = 1,
+
         /// <summary>
         /// 关注
         /// </summary>
         Follow = 2,
+
         /// <summary>
         /// 分享直播间
         /// </summary>
         Share = 3,
+
         /// <summary>
         /// 特别关注
         /// </summary>
         SpecialFollow = 4,
+
         /// <summary>
         /// 互相关注
         /// </summary>
         MutualFollow = 5,
-
     }
 }
