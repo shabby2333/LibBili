@@ -5,7 +5,7 @@ using Websocket.Client;
 
 namespace LibBili.Danmaku
 {
-    public class WebsocketDanmakuClient : IBiliDanmakuClient
+    public class WebsocketDanmakuClient : BiliDanmakuClient
     {
         private const int WS_PORT = 2244;
         private const int WSS_PORT = 443;

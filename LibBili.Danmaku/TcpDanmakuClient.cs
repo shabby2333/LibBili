@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LibBili.Danmaku
 {
-    public class TcpDanmakuClient : IBiliDanmakuClient
+    public class TcpDanmakuClient : BiliDanmakuClient
     {
         private const int TCP_PORT = 2243;
         private const string DEFAULT_DANMAKU_URL = "hw-bj-live-comet-05.chat.bilibili.com";

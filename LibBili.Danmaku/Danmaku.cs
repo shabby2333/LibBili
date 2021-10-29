@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LibBili.Danmaku
+﻿namespace LibBili.Danmaku
 {
     public struct Danmaku
     {
@@ -12,7 +8,5 @@ namespace LibBili.Danmaku
         public bool IsAdmin { get; set; }
         public bool IsVIP { get; set; }
         public int UserGuardLevel { get; set; }
-
     }
-
 }
