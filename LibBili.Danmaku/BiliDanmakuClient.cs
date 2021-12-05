@@ -243,7 +243,7 @@ namespace LibBili.Danmaku
                 len = await zs.ReadAsync(headerBuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
                 if (len == 0) break;
                 var header = new PacketHeader(headerBuffer);
-                var buffer = ArrayPool<byte>.Shared.Rent(header.BodyLength);
+                var buffer = new byte[header.BodyLength];
                 len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
                 yield return new Packet { Header = header, PacketBody = buffer };
             }
@@ -260,7 +260,7 @@ namespace LibBili.Danmaku
                 len = await zs.ReadAsync(headerBuffer.AsMemory(0, PacketHeader.PACKET_HEADER_LENGTH));
                 if (len == 0) break;
                 var header = new PacketHeader(headerBuffer);
-                var buffer = ArrayPool<byte>.Shared.Rent(header.BodyLength);
+                var buffer = new byte[header.BodyLength];
                 len = await zs.ReadAsync(buffer.AsMemory(0, buffer.Length));
                 yield return new Packet { Header = header, PacketBody = buffer };
             }
