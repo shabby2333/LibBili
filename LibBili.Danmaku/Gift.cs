@@ -9,5 +9,6 @@ namespace LibBili.Danmaku
         public string UserName { get; set; }
         public string GiftName { get; set; }
         public int GiftCount { get; set; }
+        public decimal Price { get; set; }
     }
 }
