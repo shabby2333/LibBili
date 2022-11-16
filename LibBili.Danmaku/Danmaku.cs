@@ -2,7 +2,7 @@
 {
     public struct Danmaku
     {
-        public int UserID { get; set; }
+        public long UserID { get; set; }
         public string UserName { get; set; }
         public string Text { get; set; }
         public bool IsAdmin { get; set; }

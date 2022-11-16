@@ -195,7 +195,7 @@ namespace LibBili.Danmaku
                     {
                         Danmaku = new Danmaku
                         {
-                            UserID = json["info"]![2]![0]!.Value<int>(),
+                            UserID = json["info"]![2]![0]!.Value<long>(),
                             UserName = json["info"][2][1]!.ToString(),
                             Text = json["info"][1]!.ToString(),
                             IsAdmin = json["info"][2][2]!.ToString() == "1",
