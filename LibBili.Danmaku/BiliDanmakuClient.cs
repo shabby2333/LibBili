@@ -168,7 +168,7 @@ namespace LibBili.Danmaku
                     break;
                 case Operation.HeartBeatResponse:
                     Array.Reverse(packet.PacketBody);
-                    var popularity = BitConverter.ToInt32(packet.PacketBody[0..4]);
+                    var popularity = BitConverter.ToInt32(packet.PacketBody);
                     UpdatePopularity?.Emit(this, popularity);
                     break;
                 case Operation.ServerNotify:
@@ -257,12 +257,6 @@ namespace LibBili.Danmaku
                 case "SUPER_CHAT_MESSAGE_JPN":
                 // {"cmd": "COMMON_NOTICE_DANMAKU","data": {"content_segments": [{"font_color": "#FB7299","text": "劳动节限时任务：任务即将结束，抓紧完成获取185元红包奖励吧！未完成任务进度将重置","type": 1}],"dmscore": 144,"terminals": [1,2,3,4,5]}}
                 case "COMMON_NOTICE_DANMAKU":
-                    break;
-                // {"cmd": "LIKE_INFO_V3_UPDATE","data": {"click_count": 31530}}
-                case "LIKE_INFO_V3_UPDATE":
-                    break;
-                // {"cmd":"LIKE_INFO_V3_CLICK","data":{"show_area":0,"msg_type":6,"like_icon":"https://i0.hdslb.com/bfs/live/23678e3d90402bea6a65251b3e728044c21b1f0f.png","uid":430005513,"like_text":"为主播点赞了","uname":"Bronya我滴宝儿","uname_color":"","identities":[3,1],"fans_medal":{"target_id":11073,"medal_level":11,"medal_name":"憨毛怪","medal_color":9272486,"medal_color_start":9272486,"medal_color_end":9272486,"medal_color_border":9272486,"is_lighted":1,"guard_level":0,"special":"","icon_id":0,"anchor_roomid":0,"score":21439},"contribution_info":{"grade":0},"dmscore":20}}
-                case "LIKE_INFO_V3_CLICK":
                     break;
                 default:
                     Console.WriteLine($"Unknown Info Packet : {json}");
