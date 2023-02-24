@@ -1,13 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30523.141
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33417.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibBili.Danmaku", "LibBili.Danmaku\LibBili.Danmaku.csproj", "{4B640DC8-BF9C-4420-80B0-D881B0A467ED}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibBili.Api", "LibBili.Api\LibBili.Api.csproj", "{6C1B0288-DA2E-4EF6-9244-DC23662A0A39}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibBili.TestCore", "LibBili.TestCore\LibBili.TestCore.csproj", "{52488C49-561D-4BFF-B1FB-CD76318F2029}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibBili.TestCore", "LibBili.TestCore\LibBili.TestCore.csproj", "{52488C49-561D-4BFF-B1FB-CD76318F2029}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,10 +17,6 @@ Global
 		{4B640DC8-BF9C-4420-80B0-D881B0A467ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4B640DC8-BF9C-4420-80B0-D881B0A467ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4B640DC8-BF9C-4420-80B0-D881B0A467ED}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6C1B0288-DA2E-4EF6-9244-DC23662A0A39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6C1B0288-DA2E-4EF6-9244-DC23662A0A39}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6C1B0288-DA2E-4EF6-9244-DC23662A0A39}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6C1B0288-DA2E-4EF6-9244-DC23662A0A39}.Release|Any CPU.Build.0 = Release|Any CPU
 		{52488C49-561D-4BFF-B1FB-CD76318F2029}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{52488C49-561D-4BFF-B1FB-CD76318F2029}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{52488C49-561D-4BFF-B1FB-CD76318F2029}.Release|Any CPU.ActiveCfg = Release|Any CPU

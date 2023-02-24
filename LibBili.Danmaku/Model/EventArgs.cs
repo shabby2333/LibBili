@@ -1,7 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System;
+using System.Text.Json.Nodes;
 
 namespace LibBili.Danmaku.Model
 {
@@ -9,7 +7,7 @@ namespace LibBili.Danmaku.Model
     public class ReceiveNoticeEventArgs: EventArgs
     {
         public string RawMessage { get; set; }
-        public JObject JsonMessage { get; set; }
+        public JsonNode JsonMessage { get; set; }
     }
 
     public class ReceiveDanmakuEventArgs: ReceiveNoticeEventArgs

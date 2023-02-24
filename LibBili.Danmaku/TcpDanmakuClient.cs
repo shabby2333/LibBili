@@ -42,7 +42,7 @@ namespace LibBili.Danmaku
             //根据房间号获取弹幕服务器地址信息及验证信息
             var info = await GetDanmakuLinkInfoAsync(RealRoomID.Value);
             _url = info["host_list"]?[0]?["host"]?.ToString() ?? DEFAULT_DANMAKU_URL;
-            _port = info["host_list"]?[0]?["port"]?.ToObject<int?>() ?? TCP_PORT;
+            _port = ((int?)info["host_list"]?[0]?["port"]) ?? TCP_PORT;
             _token = info["token"]?.ToString();
 
             _socket = new TcpClient();

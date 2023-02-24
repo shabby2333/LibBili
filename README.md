@@ -11,5 +11,4 @@ WIP!!!
 LibBili.Danmaku/Model/WebsocketDanmakuClient  目前简单可用
 
 ## 引用项目
-Newtonsoft.Json
 websocket.Client

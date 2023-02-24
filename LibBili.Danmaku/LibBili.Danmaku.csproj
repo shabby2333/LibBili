@@ -6,12 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
-    <PackageReference Include="Websocket.Client" Version="4.6.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\LibBili.Api\LibBili.Api.csproj" />
+    <PackageReference Include="Websocket.Client" Version="4.6.1" />
   </ItemGroup>
 
 </Project>

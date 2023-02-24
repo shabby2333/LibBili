@@ -1,16 +1,15 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
-using System.Text;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
-using LibBili.Api.Util;
 using LibBili.Danmaku.Model;
-using Newtonsoft.Json.Linq;
 // ReSharper disable InconsistentNaming
 
 namespace LibBili.Danmaku
@@ -164,15 +163,15 @@ namespace LibBili.Danmaku
             switch (header.Operation)
             {
                 case Operation.AuthorityResponse:
-                    Open?.Emit(this, null);
+                    Open?.Invoke(this, null);
                     break;
                 case Operation.HeartBeatResponse:
                     Array.Reverse(packet.PacketBody);
                     var popularity = BitConverter.ToInt32(packet.PacketBody);
-                    UpdatePopularity?.Emit(this, popularity);
+                    UpdatePopularity?.Invoke(this, popularity);
                     break;
                 case Operation.ServerNotify:
-                    ProcessNotice(Encoding.UTF8.GetString(packet.PacketBody));
+                    ProcessNotice(JsonSerializer.Deserialize<JsonObject>(packet.PacketBody));
                     break;
                 // HeartBeat packet request, only send by client
                 case Operation.HeartBeat:
@@ -184,47 +183,47 @@ namespace LibBili.Danmaku
             }
         }
 
-        protected void ProcessNotice(string rawMessage)
+        protected void ProcessNotice(JsonNode json)
         {
-            var json = JObject.Parse(rawMessage);
-            ReceiveNotice?.Emit(this, new ReceiveNoticeEventArgs { RawMessage = rawMessage, JsonMessage = json });
+            var rawMessage = json.ToJsonString();   
+            ReceiveNotice?.Invoke(this, new ReceiveNoticeEventArgs { RawMessage = rawMessage, JsonMessage = json });
             switch (json["cmd"]?.ToString())
             {
                 case "DANMU_MSG":
-                    ReceiveDanmaku?.Emit(this, new ReceiveDanmakuEventArgs
+                    ReceiveDanmaku?.Invoke(this, new ReceiveDanmakuEventArgs
                     {
                         Danmaku = new Danmaku
                         {
-                            UserID = json["info"]![2]![0]!.Value<long>(),
+                            UserID = (long)json["info"]![2]![0]!,
                             UserName = json["info"][2][1]!.ToString(),
                             Text = json["info"][1]!.ToString(),
                             IsAdmin = json["info"][2][2]!.ToString() == "1",
                             IsVIP = json["info"][2][3]!.ToString() == "1",
-                            UserGuardLevel = json["info"][7]!.Value<int>()
+                            UserGuardLevel = (int)json["info"][7]!
                         },
                         JsonMessage = json, RawMessage = rawMessage
                     });
                     break;
                 // {"cmd": "SEND_GIFT","data": {"action": "投喂","batch_combo_id": "batch:gift:combo_id:272007008:3821157:30607:1651502756.9635","batch_combo_send": null,"beatId": "0","biz_source": "Live","blind_gift": null,"broadcast_id": 0,"coin_type": "silver","combo_resources_id": 1,"combo_send": null,"combo_stay_time": 3,"combo_total_coin": 1,"crit_prob": 0,"demarcation": 1,"discount_price": 0,"dmscore": 20,"draw": 0,"effect": 0,"effect_block": 1,"face": "http://i2.hdslb.com/bfs/face/4ba8b752b5c3aa37b5893ae04a5235e80b8f7b3d.jpg","float_sc_resource_id": 0,"giftId": 30607,"giftName": "小心心","giftType": 5,"gold": 0,"guard_level": 0,"is_first": false,"is_special_batch": 0,"magnification": 1,"medal_info": {"anchor_roomid": 0,"anchor_uname": "","guard_level": 0,"icon_id": 0,"is_lighted": 1,"medal_color": 6126494,"medal_color_border": 6126494,"medal_color_end": 6126494,"medal_color_start": 6126494,"medal_level": 7,"medal_name": "秧歌星","special": "","target_id": 3821157},"name_color": "","num": 1,"original_gift_name": "","price": 0,"rcost": 26860803,"remain": 0,"rnd": "1651502757110800002","send_master": null,"silver": 0,"super": 0,"super_batch_gift_num": 2,"super_gift_num": 2,"svga_block": 0,"tag_image": "","tid": "1651502757110800002","timestamp": 1651502757,"top_list": null,"total_coin": 0,"uid": 272007008,"uname": "醉梦衡"}}
                 case "SEND_GIFT":
-                    ReceiveGift?.Emit(this, new ReceiveGiftEventArgs
+                    ReceiveGift?.Invoke(this, new ReceiveGiftEventArgs
                     {
                         Gift = new Gift
                         {
                             GiftName = json["data"]?["giftName"]?.ToString(),
                             UserName = json["data"]?["uname"]?.ToString(),
-                            UserID = json["data"]!["uid"]!.ToObject<int>(),
-                            GiftCount = json["data"]["num"]!.ToObject<int>(),
-                            Price = json["data"]["price"].ToObject<decimal>()
+                            UserID = (int)json["data"]!["uid"],
+                            GiftCount = (int)json["data"]["num"],
+                            Price = (decimal)json["data"]["price"]
                         },
                         JsonMessage = json, RawMessage = rawMessage
                     });
                     break;
                 case "LIVE":
-                    LiveStart?.Emit(this, null);
+                    LiveStart?.Invoke(this, null);
                     break;
                 case "WATCHED_CHANGE":
-                    UpdateWatched?.Emit(this, ((int)json["data"]["num"]));
+                    UpdateWatched?.Invoke(this, ((int)json["data"]["num"]));
                     break;
                 // {"cmd": "ROOM_REAL_TIME_MESSAGE_UPDATE","data": {"roomid": 21692711,"fans": 116970,"red_notice": -1,"fans_club": 6206}}
                 case "ROOM_REAL_TIME_MESSAGE_UPDATE":
@@ -304,18 +303,18 @@ namespace LibBili.Danmaku
             }
         }
 
-        protected async Task<JToken> GetDanmakuLinkInfoAsync(long roomID)
+        protected async Task<JsonNode> GetDanmakuLinkInfoAsync(long roomID)
         {
-            var resp = await _http.GetStringAsync(
+            var resp = await _http.GetFromJsonAsync<JsonObject>(
                 $"https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={roomID}&type=0");
-            return JObject.Parse(resp)["data"];
+            return resp["data"];
         }
 
-        protected async Task<JToken> GetRoomInfoAsync(long roomID)
+        protected async Task<JsonNode> GetRoomInfoAsync(long roomID)
         {
-            var resp = await _http.GetStringAsync(
+            var resp = await _http.GetFromJsonAsync<JsonObject>(
                 $"https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id={roomID}");
-            return JObject.Parse(resp)["data"];
+            return resp["data"];
         }
     }
 
