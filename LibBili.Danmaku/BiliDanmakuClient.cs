@@ -127,9 +127,9 @@ namespace LibBili.Danmaku
         public abstract void Send(Packet packet);
         public abstract Task SendAsync(Packet packet);
 
-        protected virtual void OnOpen()
+        protected virtual async void OnOpen()
         {
-            SendAsync(Packet.Authority(RealRoomID!.Value, _token));
+            await SendAsync(Packet.Authority(RealRoomID!.Value, _token));
             Connected = true;
 
             _timer?.Dispose();
