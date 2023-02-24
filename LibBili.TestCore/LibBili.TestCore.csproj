@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LibBili.Api\LibBili.Api.csproj" />
     <ProjectReference Include="..\LibBili.Danmaku\LibBili.Danmaku.csproj" />
 
   </ItemGroup>
