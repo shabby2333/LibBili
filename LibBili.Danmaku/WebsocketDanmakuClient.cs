@@ -1,7 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Net.WebSockets;
+using System.Threading;
 using System.Threading.Tasks;
-using Websocket.Client;
 
 namespace LibBili.Danmaku
 {
@@ -12,8 +13,9 @@ namespace LibBili.Danmaku
         private const string DEFAULT_DANMAKU_URL = "hw-bj-live-comet-05.chat.bilibili.com";
 
 
-        private WebsocketClient _ws;
+        private ClientWebSocket _ws;
         private string _url = "wss://hw-bj-live-comet-05.chat.bilibili.com/sub";
+        private bool _close = true;
 
         public WebsocketDanmakuClient(long roomID, long? realRoomID = null) : base(roomID, realRoomID)
         {
@@ -22,7 +24,7 @@ namespace LibBili.Danmaku
         public override async void Connect()
         {
             //尝试释放已连接的ws
-            _ws?.Stop(WebSocketCloseStatus.Empty, string.Empty);
+            _ws?.CloseAsync(WebSocketCloseStatus.Empty, string.Empty, CancellationToken.None);
             _ws?.Dispose();
 
             if (!RealRoomID.HasValue)
@@ -42,27 +44,40 @@ namespace LibBili.Danmaku
             _url =
                 $"wss://{info["host_list"]?[0]?["host"] ?? DEFAULT_DANMAKU_URL}:{info["host_list"]?[0]?["wss_port"] ?? WSS_PORT}/sub";
             _token = info["token"]?.ToString();
-            _ws = new WebsocketClient(new Uri(_url), () => new ClientWebSocket { Options = { Cookies = _cookies } });
+            _ws = new ClientWebSocket { Options = { Cookies = _cookies } };
+            await _ws.ConnectAsync(new Uri(_url), CancellationToken.None);
+            _close = false;
 
-            _ws.MessageReceived.Subscribe(e => ProcessPacket(e.Binary));
-            //TODO: 关闭及异常事件处理
-            _ws.DisconnectionHappened.Subscribe(e =>
-            {
-                if (e.CloseStatus == WebSocketCloseStatus.Empty)
-                    Console.WriteLine("WS CLOSED");
-                else
-                    Console.WriteLine("WS ERROR: " + e.Exception.Message);
-                Connected = false;
-            });
-            await _ws.Start();
             // 如果成功连接ws 触发onopen事件，发送初始包
-            if (_ws.IsStarted)
+            if (_ws.State == WebSocketState.Open)
                 OnOpen();
+
+            var mem = new byte[4096];
+            _ = Task.Run(async () =>
+            {
+                while (!_close) {
+                    if (_ws.State != WebSocketState.Open) {
+                        Console.WriteLine($"{RoomID}-连接已中断，三秒后自动重连");
+                        await Task.Delay(3000);
+                        Connect();
+                    }
+
+                    var ms = new MemoryStream();
+                    //var mem = ArrayPool<byte>.Shared.Rent(4096);
+                    while (true) {
+                        var res = await _ws.ReceiveAsync(mem, CancellationToken.None);
+                        await ms.WriteAsync(mem.AsMemory(0, res.Count));
+                        if (res.EndOfMessage) break;
+                    }
+                    ProcessPacket(ms.ToArray());
+                }
+            });
+
         }
 
-        public override void Disconnect()
+        public override async void Disconnect()
         {
-            _ws?.Stop(WebSocketCloseStatus.Empty, string.Empty);
+            await _ws?.CloseAsync(WebSocketCloseStatus.Empty, string.Empty, CancellationToken.None);
             _ws?.Dispose();
         }
 
@@ -73,7 +88,7 @@ namespace LibBili.Danmaku
             GC.SuppressFinalize(this);
         }
 
-        public override void Send(byte[] packet) => _ws?.Send(packet);
+        public override void Send(byte[] packet) => _ws?.SendAsync(packet, WebSocketMessageType.Binary, true, CancellationToken.None);
         public override void Send(Packet packet) => Send(packet.ToBytes);
         public override Task SendAsync(byte[] packet) => Task.Run(() => Send(packet));
         public override Task SendAsync(Packet packet) => SendAsync(packet.ToBytes);

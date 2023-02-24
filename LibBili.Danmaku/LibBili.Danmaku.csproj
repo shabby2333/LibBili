@@ -5,8 +5,4 @@
     <LangVersion>10.0</LangVersion>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Websocket.Client" Version="4.6.1" />
-  </ItemGroup>
-
 </Project>
