@@ -103,7 +103,7 @@ namespace LibBili.Danmaku
         /// <param name="uid">个人UID</param>
         /// <param name="protocolVersion">协议版本</param>
         /// <returns>验证请求数据包</returns>
-        public static Packet Authority(long roomID, string token, int uid = 1919180,
+        public static Packet Authority(long roomID, string token, long uid = 1919180,
             ProtocolVersion protocolVersion = ProtocolVersion.Brotli)
         {
             var obj = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
