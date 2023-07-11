@@ -28,13 +28,14 @@ namespace LibBili.Danmaku
             if (!RealRoomID.HasValue)
             {
                 // 汪姐姐说短房间号只有10000以下的，出问题记得点艹他
-                if (RoomID < 10000)
+                // 汪姐姐又说短房间号只有5000以下的了，这下如果出问题必须狠狠的点屮她
+                if (RoomID < 5000)
                 {
                     var resp = await GetRoomInfoAsync(RoomID);
                     RealRoomID = (long)resp["room_info"]?["room_id"];
                 }
-                else
-                    RealRoomID = RoomID;
+                
+                RealRoomID ??= RoomID;
             }
 
             //根据房间号获取弹幕服务器地址信息及验证信息
