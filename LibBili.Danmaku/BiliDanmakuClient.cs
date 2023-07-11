@@ -213,7 +213,7 @@ namespace LibBili.Danmaku
                         {
                             GiftName = json["data"]?["giftName"]?.ToString(),
                             UserName = json["data"]?["uname"]?.ToString(),
-                            UserID = json["data"]!["uid"]!.ToObject<int>(),
+                            UserID = json["data"]!["uid"]!.ToObject<long>(),
                             GiftCount = json["data"]["num"]!.ToObject<int>(),
                             Price = json["data"]["price"].ToObject<decimal>()
                         },
