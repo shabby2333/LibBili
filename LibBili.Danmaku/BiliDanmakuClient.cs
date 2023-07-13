@@ -164,12 +164,12 @@ namespace LibBili.Danmaku
             switch (header.Operation)
             {
                 case Operation.AuthorityResponse:
-                    Open?.Emit(this, null);
+                    Open?.Invoke(this, EventArgs.Empty);
                     break;
                 case Operation.HeartBeatResponse:
                     Array.Reverse(packet.PacketBody);
                     var popularity = BitConverter.ToInt32(packet.PacketBody);
-                    UpdatePopularity?.Emit(this, popularity);
+                    UpdatePopularity?.Invoke(this, popularity);
                     break;
                 case Operation.ServerNotify:
                     ProcessNotice(Encoding.UTF8.GetString(packet.PacketBody));
@@ -187,11 +187,11 @@ namespace LibBili.Danmaku
         protected void ProcessNotice(string rawMessage)
         {
             var json = JObject.Parse(rawMessage);
-            ReceiveNotice?.Emit(this, new ReceiveNoticeEventArgs { RawMessage = rawMessage, JsonMessage = json });
+            ReceiveNotice?.Invoke(this, new ReceiveNoticeEventArgs { RawMessage = rawMessage, JsonMessage = json });
             switch (json["cmd"]?.ToString())
             {
                 case "DANMU_MSG":
-                    ReceiveDanmaku?.Emit(this, new ReceiveDanmakuEventArgs
+                    ReceiveDanmaku?.Invoke(this, new ReceiveDanmakuEventArgs
                     {
                         Danmaku = new Danmaku
                         {
@@ -207,7 +207,7 @@ namespace LibBili.Danmaku
                     break;
                 // {"cmd": "SEND_GIFT","data": {"action": "投喂","batch_combo_id": "batch:gift:combo_id:272007008:3821157:30607:1651502756.9635","batch_combo_send": null,"beatId": "0","biz_source": "Live","blind_gift": null,"broadcast_id": 0,"coin_type": "silver","combo_resources_id": 1,"combo_send": null,"combo_stay_time": 3,"combo_total_coin": 1,"crit_prob": 0,"demarcation": 1,"discount_price": 0,"dmscore": 20,"draw": 0,"effect": 0,"effect_block": 1,"face": "http://i2.hdslb.com/bfs/face/4ba8b752b5c3aa37b5893ae04a5235e80b8f7b3d.jpg","float_sc_resource_id": 0,"giftId": 30607,"giftName": "小心心","giftType": 5,"gold": 0,"guard_level": 0,"is_first": false,"is_special_batch": 0,"magnification": 1,"medal_info": {"anchor_roomid": 0,"anchor_uname": "","guard_level": 0,"icon_id": 0,"is_lighted": 1,"medal_color": 6126494,"medal_color_border": 6126494,"medal_color_end": 6126494,"medal_color_start": 6126494,"medal_level": 7,"medal_name": "秧歌星","special": "","target_id": 3821157},"name_color": "","num": 1,"original_gift_name": "","price": 0,"rcost": 26860803,"remain": 0,"rnd": "1651502757110800002","send_master": null,"silver": 0,"super": 0,"super_batch_gift_num": 2,"super_gift_num": 2,"svga_block": 0,"tag_image": "","tid": "1651502757110800002","timestamp": 1651502757,"top_list": null,"total_coin": 0,"uid": 272007008,"uname": "醉梦衡"}}
                 case "SEND_GIFT":
-                    ReceiveGift?.Emit(this, new ReceiveGiftEventArgs
+                    ReceiveGift?.Invoke(this, new ReceiveGiftEventArgs
                     {
                         Gift = new Gift
                         {
@@ -215,16 +215,16 @@ namespace LibBili.Danmaku
                             UserName = json["data"]?["uname"]?.ToString(),
                             UserID = json["data"]!["uid"]!.ToObject<long>(),
                             GiftCount = json["data"]["num"]!.ToObject<int>(),
-                            Price = json["data"]["price"].ToObject<decimal>()
+                            Price = json["data"]["price"]!.ToObject<decimal>()
                         },
                         JsonMessage = json, RawMessage = rawMessage
                     });
                     break;
                 case "LIVE":
-                    LiveStart?.Emit(this, null);
+                    LiveStart?.Invoke(this, EventArgs.Empty);
                     break;
                 case "WATCHED_CHANGE":
-                    UpdateWatched?.Emit(this, ((int)json["data"]["num"]));
+                    UpdateWatched?.Invoke(this, ((int)json["data"]!["num"]));
                     break;
                 // {"cmd": "ROOM_REAL_TIME_MESSAGE_UPDATE","data": {"roomid": 21692711,"fans": 116970,"red_notice": -1,"fans_club": 6206}}
                 case "ROOM_REAL_TIME_MESSAGE_UPDATE":

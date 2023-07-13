@@ -31,22 +31,5 @@ namespace LibBili.Api.Util
                 cookies.Add(new Cookie(e.Key, e.Value));
             return cookies;
         }
-
-        /// <summary>
-        /// 触发事件
-        /// </summary>
-        /// <param name="event">事件的EventHandler对象</param>
-        /// <param name="sender">发送者</param>
-        /// <param name="e">传递的数据</param>
-        public static void Emit(this EventHandler @event, object sender, EventArgs e) => @event(sender, e);
-        /// <summary>
-        /// 触发事件（泛型）
-        /// </summary>
-        /// <param name="event">事件的EventHandler<T>对象</param>
-        /// <param name="sender">发送者</param>
-        /// <param name="e">传递的数据</param>
-        public static void Emit<T>(this EventHandler<T> @event, object sender, T e) => @event(sender, e);
-        
-    
     }
 }
