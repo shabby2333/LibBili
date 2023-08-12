@@ -3,6 +3,12 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <LangVersion>10.0</LangVersion>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Authors>shabby2333</Authors>
+    <PackageProjectUrl>https://github.com/shabby2333/LibBili</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+	<Version>0.1.0-dev</Version>
   </PropertyGroup>
 
   <ItemGroup>
