@@ -10,8 +10,4 @@
     <PackageReference Include="Websocket.Client" Version="4.6.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\LibBili.Api\LibBili.Api.csproj" />
-  </ItemGroup>
-
 </Project>

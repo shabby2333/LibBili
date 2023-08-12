@@ -2,13 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>11</LangVersion>
 	<PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\LibBili.Api\LibBili.Api.csproj" />
     <ProjectReference Include="..\LibBili.Danmaku\LibBili.Danmaku.csproj" />
 
   </ItemGroup>
