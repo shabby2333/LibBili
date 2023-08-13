@@ -8,7 +8,10 @@ WIP!!!
 
 
 ## 使用方法
+nuget中搜索安装 LibBili.Danmaku
+
 LibBili.Danmaku/Model/WebsocketDanmakuClient  目前简单可用
+LibBili.Danmaku/Model/TcptDanmakuClient  目前简单可用
 
 ## 引用项目
 Newtonsoft.Json
